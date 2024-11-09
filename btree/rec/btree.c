@@ -19,6 +19,7 @@
  */
 void bst_init(bst_node_t **tree)
 {
+    *tree = NULL;
 }
 
 /*
@@ -32,7 +33,18 @@ void bst_init(bst_node_t **tree)
  */
 bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
 {
-  return false;
+     if (tree == NULL || value == NULL) { // Kontrola NULLu
+        return false;
+    }
+
+    if (key == tree->key) {
+        *value = &tree->content;
+        return true;
+    } else if (key < tree->key) { // Rekurzivní procházení
+        return bst_search(tree->left, key, value);
+    } else {
+        return bst_search(tree->right, key, value);
+    }
 }
 
 /*
@@ -48,6 +60,33 @@ bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
  */
 void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
 {
+    if (tree == NULL) { // Pro jistotu kontrola NULLu ;)
+        return;
+    }
+    if (*tree == NULL) { // Uzel nenalezen
+        *tree = (bst_node_t *)malloc(sizeof(bst_node_t));
+        if (tree == NULL){
+            return;
+        }
+        (*tree)->key = key;
+        (*tree)->content = value;
+        (*tree)->left = NULL;
+        (*tree)->right = NULL;
+        return;
+    }
+
+    if (key < (*tree)->key) {
+        bst_insert(&(*tree)->left, key, value);
+    }
+    else if (key > (*tree)->key) {
+        bst_insert(&(*tree)->right, key, value);
+    }
+    else {
+          if ((*tree)->content.value != NULL) {
+                free((*tree)->content.value); // Uvolnění hodnoty, pokud existuje
+          }
+          (*tree)->content = value;  // Pokud klíč existuje, nahradíme hodnotu
+    }
 }
 
 /*
@@ -65,6 +104,19 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
  */
 void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
 {
+    if ((*tree)->right != NULL) { //Rekuzivně se dostaneme nejvíc doprava
+        bst_replace_by_rightmost(target, &(*tree)->right);
+    }
+    else {
+        bst_node_t *to_delete = *tree;
+        target->key = (*tree)->key;
+        if (target->content.value != NULL) {
+            free(target->content.value); // Uvolnění původní hodnoty pokud existuje
+        }
+        target->content = (*tree)->content;
+        *tree = (*tree)->left;
+        free(to_delete);
+    }
 }
 
 /*
@@ -82,6 +134,36 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
  */
 void bst_delete(bst_node_t **tree, char key)
 {
+    if (tree == NULL) { // Pro jistotu kontrola NULLu ;)
+        return;
+    }
+    if (*tree == NULL) {
+        return;
+    }
+    if (key < (*tree)->key) {
+        bst_delete(&(*tree)->left, key); // Procházení stromu podle hodnoty
+    }
+    else if (key > (*tree)->key) {
+        bst_delete(&(*tree)->right, key);
+    }
+    else {
+        bst_node_t *to_delete = *tree;
+
+        if ((*tree)->left == NULL) {
+                *tree = (*tree)->right;
+            } else if ((*tree)->right == NULL) {
+                *tree = (*tree)->left;
+            } else {
+                // Uzel má oba potomky
+                bst_replace_by_rightmost(*tree, &(*tree)->left);
+                return; // Po nahrazení uzlu se nic víc nedělá
+            }
+
+        if (to_delete->content.value != NULL) {
+            free(to_delete->content.value);
+        }
+        free(to_delete);
+    }
 }
 
 /*
@@ -95,6 +177,19 @@ void bst_delete(bst_node_t **tree, char key)
  */
 void bst_dispose(bst_node_t **tree)
 {
+    if (*tree == NULL) {
+        return;
+    }
+
+    bst_dispose(&(*tree)->left); // Dostaneme se na nejlevější a od spodu mažeme
+    bst_dispose(&(*tree)->right); // Když už nejde jít více doleva, jdeme co nejvíc doprava
+
+    if ((*tree)->content.value != NULL) {
+        free((*tree)->content.value);
+    }
+
+    free(*tree);
+    *tree = NULL;
 }
 
 /*
@@ -106,6 +201,13 @@ void bst_dispose(bst_node_t **tree)
  */
 void bst_preorder(bst_node_t *tree, bst_items_t *items)
 {
+     if (tree == NULL) {
+        return;
+    }
+
+    bst_add_node_to_items(tree, items); // Volání na aktuální uzel
+    bst_preorder(tree->left, items);
+    bst_preorder(tree->right, items);
 }
 
 /*
@@ -117,6 +219,13 @@ void bst_preorder(bst_node_t *tree, bst_items_t *items)
  */
 void bst_inorder(bst_node_t *tree, bst_items_t *items)
 {
+    if (tree == NULL) {
+        return;
+    }
+
+    bst_inorder(tree->left, items);
+    bst_add_node_to_items(tree, items); // Volání na aktuální uzel
+    bst_inorder(tree->right, items);
 }
 
 /*
@@ -128,4 +237,11 @@ void bst_inorder(bst_node_t *tree, bst_items_t *items)
  */
 void bst_postorder(bst_node_t *tree, bst_items_t *items)
 {
+    if (tree == NULL) {
+        return;
+    }
+
+    bst_postorder(tree->left, items);
+    bst_postorder(tree->right, items);
+    bst_add_node_to_items(tree, items); // Volání na aktuální uzel
 }

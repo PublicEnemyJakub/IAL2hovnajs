@@ -145,7 +145,7 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
  */
 void bst_delete(bst_node_t **tree, char key)
 {
-     if (tree == NULL) { // Pro jistotu kontrola NULLu ;)
+    if (tree == NULL) { // Pro jistotu kontrola NULLu ;)
         return;
     }
     while (*tree != NULL) {
